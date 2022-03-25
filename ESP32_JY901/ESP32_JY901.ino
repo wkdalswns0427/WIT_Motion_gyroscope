@@ -69,7 +69,6 @@ int rs485_receive(byte recv[]){
     }
     if(rs485.available()){
       rs485.readBytes(recv, 11);
-      rs485.flush();
       }
     return 0;
     break;
@@ -105,19 +104,22 @@ void setup()
 
 void loop() 
 { 
+  rs485.flush();
   uint16_t data_x, data_y, data_z;
   rs485.write(readAcc, 8);
-  for(int i = 0;i<8;i++){
-    Serial.print(readAcc[i],HEX);
-    Serial.print(",");
-  }
+//  for(int i = 0;i<8;i++){
+//    Serial.print(readAcc[i],HEX);
+//    Serial.print(",");
+//  }
   Serial.println();
 
   if(rs485_receive(recData) != -1){
     Serial.println("data recieved!");
     for(int i = 0;i<11;i++){
       Serial.print(recData[i], HEX);
-      Serial.print(",");
+      while(i<11){
+        Serial.print(",");
+        }
       }
       Serial.println();
   }
@@ -129,5 +131,6 @@ void loop()
    data_y = (((recData[5]<<8)|recData[6])*16*9.81)/32768;
    data_z = (((recData[7]<<8)|recData[8])*16*9.81)/32768;
    Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
+   Serial.println();
    delay(5000);
 }
