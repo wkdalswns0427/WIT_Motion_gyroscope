@@ -1,0 +1,60 @@
+
+readAcc
+reading completed
+50,3,2,0,0,45,88,0,0,0,0,
+readAng
+reading completed
+data recieved!
+50,3,2,0,0,45,88,0,0,0,0,
+
+readAcc
+reading completed
+50,3,2,0,0,45,88,0,0,0,0,
+readAng
+reading completed
+data recieved!
+50,3,2,0,0,45,88,0,0,0,0,
+
+readAcc
+reading completed
+50,3,2,0,0,45,88,0,0,0,0,
+readAng
+reading completed
+data recieved!
+50,3,2,0,0,45,88,0,0,0,0,
+
+readAcc
+reading completed
+50,3,2,0,0,45,88,0,0,0,0,
+readAng
+read 12 byte
+reading completed
+data recieved!
+FA,BF,EF,FF,BF,FF,FF,FF,EF,E7,BD,
+
+readAcc
+reading completed
+7E,9F,EF,79,9B,FF,9F,DB,F7,7F,BD,
+readAng
+reading completed
+data recieved!
+7E,3F,EF,FF,B3,FF,FD,67,7F,EF,BD,
+
+readAcc
+read 12 byte
+reading completed
+7E,37,EF,F9,EF,FF,EF,9B,CF,57,DF,
+readAng
+reading completed
+data recieved!
+7A,3F,EF,FF,FB,DF,B7,77,FE,F6,DF,
+
+readAcc
+reading completed
+7A,1F,EF,39,9F,FF,FF,F7,FE,FB,DF,
+readAng
+read 12 byte
+reading completed
+data recieved!
+7A,9F,EF,FF,6F,FF,77,BF,FB,EB,FF,
+
