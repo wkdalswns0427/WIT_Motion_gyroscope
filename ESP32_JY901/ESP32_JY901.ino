@@ -20,13 +20,17 @@ const byte readAngVel[] = {0x50, 0x03, 0x00, 0x37, 0x00, 0x03, 0xB9, 0x84};
 byte recData[12];
 
 void sendCommand(const byte command[]){
-  for(int i = 0;i<8;i++){
-    Serial.print(command[i],HEX);
-    if(i != 7){
-      Serial.print(",");
-      }
+  byte data[10];
+  for(int i=0;i<8;i++){
+    data[i]=command[i];
     }
-  rs485.write(command, 8);
+//  for(int i = 0;i<8;i++){
+//    Serial.print(command[i],HEX);
+//    if(i != 7){
+//      Serial.print(",");
+//      }
+//    }
+  rs485.write(data, 8);
   Serial.println();
   rs485.flush();
   }
@@ -95,14 +99,14 @@ void setup()
   rs485.flush();
   
   Serial.println("---------- Serial Initiated ----------");
-  rs485.write(unlockMaster, 8);
+  sendCommand(unlockMaster);
   for(int i = 0;i<8;i++){
     Serial.print(unlockMaster[i],HEX);
     Serial.print(",");
   }
   Serial.println();
   rs485.flush();
-  //calibrateAcc();
+  calibrateAcc();
   Serial.println("---------- Calibration Done ----------");
 }
 
@@ -110,7 +114,7 @@ void setup()
 void loop() 
 { 
   Serial.println();
-  rs485.write(readAcc, 8);
+  sendCommand(readAcc);
   Serial.println("readAcc");
   delay(3000);
   rs485.flush();
@@ -131,7 +135,7 @@ void loop()
    rs485.flush();
    delay(5000);
    
-  rs485.write(readAngle, 8);
+  sendCommand(readAngle);
   Serial.println("readAng");
   delay(3000);
   rs485.flush();
