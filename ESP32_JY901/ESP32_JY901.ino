@@ -144,7 +144,7 @@ void loop()
     Serial.println("no resp");
     Serial.println();    
     } 
-//   printData();
+  printData();
   rs485.flush();
   delay(5000);
 }
