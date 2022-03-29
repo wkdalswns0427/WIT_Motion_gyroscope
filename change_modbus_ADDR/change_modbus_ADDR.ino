@@ -93,8 +93,8 @@ void setup()
   
   Serial.println("---------- Serial Initiated ----------");
   Serial.println();
-  changeAddress();
-  Serial.println("---------- Address Changed ----------");
+  //changeAddress();
+  //Serial.println("---------- Address Changed ----------");
   calibrateAcc();
   Serial.println("---------- Calibration done ----------");
   

@@ -2,23 +2,23 @@
 #define RXD2 5
 #define TXD2 17
 HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
-//#include "JY901.h"
 
-byte MODBUS_ADDR=0x50;
-byte READ_REG=0x03;
-byte WRITE_REG=0x06;
+//byte MODBUS_ADDR=0x50;
+//byte READ_REG=0x03;
+//byte WRITE_REG=0x06;
 
 
-byte unlockMaster[] = {MODBUS_ADDR, WRITE_REG, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
-byte accCalmode[]={MODBUS_ADDR, WRITE_REG, 0x00, 0x01, 0x00, 0x01, 0x14, 0x4B};
-byte setNormal[]={MODBUS_ADDR, WRITE_REG, 0x00, 0x01, 0x00, 0x00, 0xD5, 0x8B};
-byte saveConfig[]={MODBUS_ADDR, WRITE_REG, 0x00, 0x00, 0x00, 0x00, 0x84, 0x4B};
+byte unlockMaster[] = {0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
+byte accCalmode[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x01, 0x14, 0x4B};
+byte magCalmode[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x07, 0x94, 0x49};
+byte setNormal[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x00, 0xD5, 0x8B};
+byte saveConfig[]={0x50, 0x06, 0x00, 0x00, 0x00, 0x00, 0x84, 0x4B};
 
 byte readAngle[] = {0x50, 0x03, 0x00, 0x3d, 0x00, 0x03, 0x99, 0x86};
 byte readAcc[] = {0x50, 0x03, 0x00, 0x34, 0x00, 0x03, 0x49, 0x84};
 byte readAngVel[] = {0x50, 0x03, 0x00, 0x37, 0x00, 0x03, 0xB9, 0x84};
 byte recData[12];
-byte trashBuffer[39];
+byte trashBuffer[100];
 
 int flag = 0;
 
@@ -41,20 +41,32 @@ void sendCommand(byte command[8], int prt){
   }
 
 void calibrateAcc(){
-  Serial.println("---------- Calibration Init ----------");
+  Serial.println("---------- Acceleration Calibration Init ----------");
   sendCommand(unlockMaster,1);
   delay(500);
   sendCommand(accCalmode,1);
   delay(5000);
   sendCommand(setNormal,1);
-  delay(3000);
+  delay(1000);
   sendCommand(saveConfig,1);
-  delay(2000);
+  delay(1000);
   }
-
+void calibrateMag(){
+  Serial.println("---------- Magnetic Calibration Init ----------");
+  sendCommand(unlockMaster,1);
+  delay(500);
+  sendCommand(magCalmode,1);
+  Serial.println("---------- Slowly rotate in 3 axis ----------");
+  delay(5000);
+  Serial.println("---------- May stop now :) ----------");
+  sendCommand(setNormal,1);
+  delay(1000);
+  sendCommand(saveConfig,1);
+  delay(1000);  
+  }
 void rs485_send(byte command, byte message[]){
   byte data[9];
-  data[0] = MODBUS_ADDR;
+  data[0] = 0x50;
   data[1] = command;
   for(int i =2;i<9;i++){
     data[i] = message[i-2];
@@ -86,10 +98,17 @@ int rs485_receive(byte recv[], int num){
   }
 }
 
-void printData(){
+void printAccel(){
   float data_x = (((recData[3]<<8)|recData[4])*16*9.81)/32768;
   float data_y = (((recData[5]<<8)|recData[6])*16*9.81)/32768;
   float data_z = (((recData[7]<<8)|recData[8])*16*9.81)/32768 - 9.81;
+  Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
+  }
+
+void printAngle(){
+  float data_x = ((recData[3]<<8)|recData[4])/32768*180;
+  float data_y = ((recData[5]<<8)|recData[6])/32768*180;
+  float data_z = ((recData[7]<<8)|recData[8])/32768*180;
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
@@ -99,14 +118,14 @@ void setup()
   rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
   rs485.flush();
   
-  Serial.println("---------- Serial Initiated ----------");
-  Serial.println();
+  Serial.println("--------------- Serial Initiated ---------------");
   calibrateAcc();
-  Serial.println("---------- Calibration Done ----------");
+  calibrateMag();
+  Serial.println("--------------- Calibration Done ---------------");
   
-  if(rs485_receive(trashBuffer, 39) != -1){
+  if(rs485_receive(trashBuffer, 71) != -1){
     //Serial.println("data recieved!");
-    for(int i = 0;i<39;i++){
+    for(int i = 0;i<71;i++){
       Serial.print(trashBuffer[i],HEX);
       Serial.print(",");
       }
@@ -138,7 +157,7 @@ void loop()
     Serial.println("no resp");
     Serial.println();    
     } 
-  printData();
+  printAccel();
   rs485.flush();
   delay(1000);
 
@@ -159,6 +178,6 @@ void loop()
     Serial.println("no resp");
     Serial.println();    
     } 
-  printData();
+  printAngle();
   delay(1000);
 }
