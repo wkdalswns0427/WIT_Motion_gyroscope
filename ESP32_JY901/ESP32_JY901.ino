@@ -99,9 +99,9 @@ int rs485_receive(byte recv[], int num){
 }
 
 void printAccel(){
-  float data_x = (((recData[3]<<8)|recData[4])*16*9.81)/32768;
-  float data_y = (((recData[5]<<8)|recData[6])*16*9.81)/32768;
-  float data_z = (((recData[7]<<8)|recData[8])*16*9.81)/32768 - 9.81;
+  float data_x = ((recData[3]<<8)|recData[4])/32768*16*9.81;
+  float data_y = ((recData[5]<<8)|recData[6])/32768*16*9.81;
+  float data_z = ((recData[7]<<8)|recData[8])/32768*16*9.81 - 9.81;
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
