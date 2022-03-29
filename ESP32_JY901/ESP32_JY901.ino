@@ -2,11 +2,11 @@
 #define RXD2 5
 #define TXD2 17
 HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
-#include "JY901.h"
+//#include "JY901.h"
 
-const byte MODBUS_ADDR=0x50;
-const byte READ_REG=0x03;
-const byte WRITE_REG=0x06;
+byte MODBUS_ADDR=0x50;
+byte READ_REG=0x03;
+byte WRITE_REG=0x06;
 
 
 byte unlockMaster[] = {MODBUS_ADDR, WRITE_REG, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
@@ -42,6 +42,8 @@ void sendCommand(byte command[8], int prt){
 
 void calibrateAcc(){
   Serial.println("---------- Calibration Init ----------");
+  sendCommand(unlockMaster,1);
+  delay(500);
   sendCommand(accCalmode,1);
   delay(5000);
   sendCommand(setNormal,1);
@@ -78,10 +80,7 @@ int rs485_receive(byte recv[], int num){
     }
     for (int i = 0; (rs485.available() > 0) && (i < num); i++) {
       recv[i] = rs485.read();
-      if (i == (num-1))
-      Serial.println("read data");
     }
-    Serial.println("reading completed");
     return 0;
     break;
   }
@@ -90,7 +89,7 @@ int rs485_receive(byte recv[], int num){
 void printData(){
   float data_x = (((recData[3]<<8)|recData[4])*16*9.81)/32768;
   float data_y = (((recData[5]<<8)|recData[6])*16*9.81)/32768;
-  float data_z = (((recData[7]<<8)|recData[8])*16*9.81)/32768;
+  float data_z = (((recData[7]<<8)|recData[8])*16*9.81)/32768 - 9.81;
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
@@ -101,13 +100,7 @@ void setup()
   rs485.flush();
   
   Serial.println("---------- Serial Initiated ----------");
-  sendCommand(unlockMaster,1);
-  for(int i = 0;i<8;i++){
-    Serial.print(unlockMaster[i],HEX);
-    Serial.print(",");
-  }
   Serial.println();
-  rs485.flush();
   calibrateAcc();
   Serial.println("---------- Calibration Done ----------");
   
@@ -124,12 +117,13 @@ void setup()
 
 void loop() 
 { 
+  rs485.flush();
   if(++flag==1){
-    Serial.println("WT901C485 read acceleration");
+    Serial.println("WT901C485 read");
     }
-  Serial.println();
   sendCommand(readAcc,0);
-  delay(3000);
+  Serial.println("Acceleration");
+  delay(2000);
   rs485.flush();
 
   if(rs485_receive(recData, 11) != -1){
@@ -146,5 +140,25 @@ void loop()
     } 
   printData();
   rs485.flush();
-  delay(5000);
+  delay(1000);
+
+  sendCommand(readAngle,0);
+  Serial.println("Angle");
+  delay(2000);
+  rs485.flush();
+
+  if(rs485_receive(recData, 11) != -1){
+    //Serial.println("data recieved!");
+    for(int i = 0;i<11;i++){
+      Serial.print(recData[i],HEX);
+      Serial.print(",");
+      }
+      Serial.println();
+    }
+   else{
+    Serial.println("no resp");
+    Serial.println();    
+    } 
+  printData();
+  delay(1000);
 }
