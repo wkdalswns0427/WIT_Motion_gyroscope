@@ -101,7 +101,7 @@ int rs485_receive(byte recv[], int num){
 void printAccel(){
   float data_x = ((recData[3]<<8)|recData[4])/32768*16*9.81;
   float data_y = ((recData[5]<<8)|recData[6])/32768*16*9.81;
-  float data_z = ((recData[7]<<8)|recData[8])/32768*16*9.81 - 9.81;
+  float data_z = ((recData[7]<<8)|recData[8])/32768*16*9.81;
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
@@ -123,9 +123,9 @@ void setup()
   calibrateMag();
   Serial.println("--------------- Calibration Done ---------------");
   
-  if(rs485_receive(trashBuffer, 71) != -1){
+  if(rs485_receive(trashBuffer, 63) != -1){
     //Serial.println("data recieved!");
-    for(int i = 0;i<71;i++){
+    for(int i = 0;i<63;i++){
       Serial.print(trashBuffer[i],HEX);
       Serial.print(",");
       }
@@ -146,7 +146,9 @@ void loop()
   rs485.flush();
 
   if(rs485_receive(recData, 11) != -1){
-    //Serial.println("data recieved!");
+    if(recData[0] != 80){
+      ESP.restart();
+      }
     for(int i = 0;i<11;i++){
       Serial.print(recData[i],HEX);
       Serial.print(",");
@@ -167,7 +169,9 @@ void loop()
   rs485.flush();
 
   if(rs485_receive(recData, 11) != -1){
-    //Serial.println("data recieved!");
+    if(recData[0] != 80){
+      ESP.restart();
+      }
     for(int i = 0;i<11;i++){
       Serial.print(recData[i],HEX);
       Serial.print(",");
