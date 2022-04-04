@@ -8,15 +8,16 @@ byte new_ADDR = 0x51;
 byte WRITE_REG = 0x06;
 
 byte unlockMaster[] = {0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
-byte changeADDR[] = {0x50, 0x06, 0x00, 0x1a, 0x00, new_ADDR, 0x64, 0x70};
-byte saveConfig[]={0x51, 0x06, 0x00, 0x00, 0x00, 0x00, 0x84, 0x4B};
+byte unlockMaster2[] = {0x51, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x23, 0x70};
+byte changeADDR[] = {0x50, 0x06, 0x00, 0x1A, 0x00, 0x51, 0x64, 0x70};
+byte saveConfig[]={0x51, 0x06, 0x00, 0x00, 0x00, 0x00, 0x85, 0x9A};
 
-byte accCalmode[]={0x51, 0x06, 0x00, 0x01, 0x00, 0x01, 0x14, 0x4B};
-byte setNormal[]={0x51, 0x06, 0x00, 0x01, 0x00, 0x00, 0xD5, 0x8B};
+byte accCalmode[]={0x51, 0x06, 0x00, 0x01, 0x00, 0x01, 0x15, 0x9A};
+byte setNormal[]={0x51, 0x06, 0x00, 0x01, 0x00, 0x00, 0xD4, 0x5A};
 
-byte readAngle[] = {0x51, 0x03, 0x00, 0x3d, 0x00, 0x03, 0x99, 0x86};
-byte readAcc[] = {0x51, 0x03, 0x00, 0x34, 0x00, 0x03, 0x49, 0x84};
-byte readAngVel[] = {0x51, 0x03, 0x00, 0x37, 0x00, 0x03, 0xB9, 0x84};
+byte readAngle[] = {0x51, 0x03, 0x00, 0x3D, 0x00, 0x03, 0x98, 0x57};
+byte readAcc[] = {0x51, 0x03, 0x00, 0x34, 0x00, 0x03, 0x48, 0x55};
+byte readAngVel[] = {0x51, 0x03, 0x00, 0x37, 0x00, 0x03, 0xB8, 0x55};
 byte recData[12];
 byte trashBuffer[70];
 
@@ -42,7 +43,7 @@ void sendCommand(byte command[8], int prt){
 
 void calibrateAcc(){
   Serial.println("---------- Calibration Init ----------");
-  sendCommand(unlockMaster,1);
+  sendCommand(unlockMaster2,1);
   delay(500);
   sendCommand(accCalmode,1);
   delay(5000);
@@ -79,23 +80,31 @@ int rs485_receive(byte recv[], int num){
   }
 }
 
-void printData(){
-  float data_x = (((recData[3]<<8)|recData[4])*16*9.81)/32768;
-  float data_y = (((recData[5]<<8)|recData[6])*16*9.81)/32768;
-  float data_z = (((recData[7]<<8)|recData[8])*16*9.81)/32768 - 9.81;
+void printAccel(){
+  float data_x = ((recData[3]<<8)|recData[4])/(32768/16);
+  float data_y = ((recData[5]<<8)|recData[6])/(32768/16);
+  float data_z = ((recData[7]<<8)|recData[8])/(32768/16);
+  Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
+  }
+
+void printAngle(){
+  float data_x = ((recData[3]<<8)|recData[4])/(32768/180);
+  float data_y = ((recData[5]<<8)|recData[6])/(32768/180);
+  float data_z = ((recData[7]<<8)|recData[8])/(32768/180);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
 void setup() 
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
   rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
   rs485.flush();
   
   Serial.println("---------- Serial Initiated ----------");
   Serial.println();
+  //run only once with function below!
   //changeAddress();
-  //Serial.println("---------- Address Changed ----------");
+  Serial.println("---------- Address Changed ----------");
   calibrateAcc();
   Serial.println("---------- Calibration done ----------");
   
@@ -132,7 +141,7 @@ void loop()
     Serial.println("no resp");
     Serial.println();    
     } 
-  printData();
+  printAccel();
   rs485.flush();
   delay(1000);
 
@@ -153,7 +162,7 @@ void loop()
     Serial.println("no resp");
     Serial.println();    
     } 
-  printData();
+  printAngle();
   delay(1000);
   rs485.flush();
 }

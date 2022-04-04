@@ -8,9 +8,15 @@ HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
 //byte WRITE_REG=0x06;
 
 
-byte unlockMaster[] = {0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
+byte unlockMaster[]={0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
+byte changeADDR[] = {0x50, 0x06, 0x00, 0x1A, 0x00, 0x51, 0x64, 0x70};
+
+// sample cpp
+// byte accCalmode[]={0x50, 0x06, 0x00, 0xFF, 0xAA, 0x01, 0x1B, 0x0B};
+// byte magCalmode[]={0x50, 0x06, 0x00, 0xFF, 0xAA, 0x07, 0x8B, 0x19};
 byte accCalmode[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x01, 0x14, 0x4B};
 byte magCalmode[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x07, 0x94, 0x49};
+
 byte setNormal[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x00, 0xD5, 0x8B};
 byte saveConfig[]={0x50, 0x06, 0x00, 0x00, 0x00, 0x00, 0x84, 0x4B};
 
@@ -99,28 +105,28 @@ int rs485_receive(byte recv[], int num){
 }
 
 void printAccel(){
-  float data_x = ((recData[3]<<8)|recData[4])/32768*16*9.81;
-  float data_y = ((recData[5]<<8)|recData[6])/32768*16*9.81;
-  float data_z = ((recData[7]<<8)|recData[8])/32768*16*9.81;
+  float data_x = ((recData[3]<<8)|recData[4])/(32768/16);
+  float data_y = ((recData[5]<<8)|recData[6])/(32768/16);
+  float data_z = ((recData[7]<<8)|recData[8])/(32768/16);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
 void printAngle(){
-  float data_x = ((recData[3]<<8)|recData[4])/32768*180;
-  float data_y = ((recData[5]<<8)|recData[6])/32768*180;
-  float data_z = ((recData[7]<<8)|recData[8])/32768*180;
+  float data_x = ((recData[3]<<8)|recData[4])/(32768/180);
+  float data_y = ((recData[5]<<8)|recData[6])/(32768/180);
+  float data_z = ((recData[7]<<8)|recData[8])/(32768/180);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
 void setup() 
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
   rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
   rs485.flush();
   
   Serial.println("--------------- Serial Initiated ---------------");
   calibrateAcc();
-  calibrateMag();
+  //calibrateMag();
   Serial.println("--------------- Calibration Done ---------------");
   
   if(rs485_receive(trashBuffer, 63) != -1){
@@ -146,9 +152,9 @@ void loop()
   rs485.flush();
 
   if(rs485_receive(recData, 11) != -1){
-    if(recData[0] != 80){
-      ESP.restart();
-      }
+    //if(recData[0] != 80){
+      //ESP.restart();
+      //}
     for(int i = 0;i<11;i++){
       Serial.print(recData[i],HEX);
       Serial.print(",");
@@ -163,25 +169,23 @@ void loop()
   rs485.flush();
   delay(1000);
 
-  sendCommand(readAngle,0);
-  Serial.println("Angle");
-  delay(2000);
-  rs485.flush();
+//  sendCommand(readAngle,0);
+//  Serial.println("Angle");
+//  delay(2000);
+//  rs485.flush();
+//
+//  if(rs485_receive(recData, 11) != -1){
+//    for(int i = 0;i<11;i++){
+//      Serial.print(recData[i],HEX);
+//      Serial.print(",");
+//      }
+//      Serial.println();
+//    }
+//   else{
+//    Serial.println("no resp");
+//    Serial.println();    
+//    } 
+//  printAngle();
+//  delay(1000);
 
-  if(rs485_receive(recData, 11) != -1){
-    if(recData[0] != 80){
-      ESP.restart();
-      }
-    for(int i = 0;i<11;i++){
-      Serial.print(recData[i],HEX);
-      Serial.print(",");
-      }
-      Serial.println();
-    }
-   else{
-    Serial.println("no resp");
-    Serial.println();    
-    } 
-  printAngle();
-  delay(1000);
 }
