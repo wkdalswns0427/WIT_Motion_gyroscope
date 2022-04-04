@@ -202,6 +202,49 @@ void readSensorAngle(int type){
     }
   }
 
+void readAngularVelocity(int type){
+  if(type==1){
+    sendCommand(readAngVel1,0);
+    Serial.println("Angular Velocity");
+    delay(2000);
+  
+    if(rs485_receive(recData1, 11) != -1){
+      for(int i = 0;i<11;i++){
+        Serial.print(recData1[i],HEX);
+        Serial.print(",");
+        }
+        Serial.println();
+      }
+     else{
+      Serial.println("no resp");
+      Serial.println();    
+      } 
+    printAngVel(recData1);
+    rs485.flush();
+    delay(1000);
+    }
+    else if(type==2){
+    sendCommand(readAngVel2,0);
+    Serial.println("Angular Velocity");
+    delay(2000);
+  
+    if(rs485_receive(recData2, 11) != -1){
+      for(int i = 0;i<11;i++){
+        Serial.print(recData2[i],HEX);
+        Serial.print(",");
+        }
+        Serial.println();
+      }
+     else{
+      Serial.println("no resp");
+      Serial.println();    
+      } 
+    printAngVel(recData2);
+    rs485.flush();
+    delay(1000);
+    }
+  }
+
 void printAccel(byte rec[]){
   float data_x = ((rec[3]<<8)|rec[4])/(32768/16);
   float data_y = ((rec[5]<<8)|rec[6])/(32768/16);
@@ -213,6 +256,13 @@ void printAngle(byte rec[]){
   float data_x = ((rec[3]<<8)|rec[4])/(32768/180);
   float data_y = ((rec[5]<<8)|rec[6])/(32768/180);
   float data_z = ((rec[7]<<8)|rec[8])/(32768/180);
+  Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
+  }
+
+void printAngVel(byte rec[]){
+  float data_x = ((rec[3]<<8)|rec[4])/(32768/2000);
+  float data_y = ((rec[5]<<8)|rec[6])/(32768/2000);
+  float data_z = ((rec[7]<<8)|rec[8])/(32768/2000);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
@@ -246,5 +296,9 @@ void loop()
     Serial.println("WT901C485 read");
     }
   readAcceleration(1);
+  readSensorAngle(1);
+  readAngularVelocity(1);
   readAcceleration(2);
+  readSensorAngle(2);
+  readAngularVelocity(2);
 }
