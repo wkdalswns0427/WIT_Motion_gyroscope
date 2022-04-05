@@ -13,6 +13,10 @@ HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
 #define ETH_TYPE        ETH_PHY_LAN8720
 static bool eth_connected = false;
 
+#include <HTTPClient.h>
+#include <string.h>
+#include <math.h>
+
 byte unlockMaster1[]={0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
 byte changeADDR1[] = {0x50, 0x06, 0x00, 0x1A, 0x00, 0x51, 0x64, 0x70};
 byte accCalmode1[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x01, 0x14, 0x4B};
@@ -36,10 +40,16 @@ byte recData1[12];
 byte recData2[12];
 byte trashBuffer[100];
 
+static byte accDiff[] = {0,0,0};
+static byte angDiff[] = {0,0,0};
+static byte angvelDiff[] = {0,0,0};
+
 int flag = 0;
 
+/*
 void WiFiEvent(WiFiEvent_t event)
 {
+
   switch (event) {
     case ARDUINO_EVENT_ETH_START:
       Serial.println("ETH Started");
@@ -74,7 +84,7 @@ void WiFiEvent(WiFiEvent_t event)
       break;
   }
 }
-
+*/
 
 void sendCommand(byte command[8], int prt){
   byte data[10];
@@ -314,14 +324,24 @@ void printAngVel(byte rec[]){
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
+byte* calculateDiff(byte arr[]){
+  for(int i=0; i<3; i++){
+    arr[i]=abs(((recData1[2*i+3]<<8)|recData1[4])-((recData2[2*i+4]<<8)|recData2[4]));
+    }
+  Serial.print(arr[0]);Serial.print("   "); Serial.print(arr[1]);Serial.print("   "); Serial.println(arr[2]);
+  return arr;
+  }
+
 void setup() 
-{
+{ 
   Serial.begin(9600);
   rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
   rs485.flush();
+  /*
   WiFi.onEvent(WiFiEvent);
   ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
   delay(10000);
+  */
   
   Serial.println("--------------- Serial Initiated ---------------");
   calibrateAcc(1);
@@ -346,10 +366,17 @@ void loop()
   if(++flag==1){
     Serial.println("WT901C485 read");
     }
+  
   readAcceleration(1);
-  readSensorAngle(1);
-  readAngularVelocity(1);
   readAcceleration(2);
+  calculateDiff(accDiff);
+  
+  readSensorAngle(1);
   readSensorAngle(2);
+  calculateDiff(angDiff);
+  
+  readAngularVelocity(1);
   readAngularVelocity(2);
+  calculateDiff(angvelDiff);
+  delay(500);
 }
