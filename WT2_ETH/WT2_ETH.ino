@@ -356,6 +356,8 @@ void setup()
   Serial.begin(9600);
   rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
   rs485.flush();
+  // wifi
+  /*
   WiFi.begin(ssid, password);
   while(WiFi.status() != WL_CONNECTED){
     delay(500);
@@ -363,6 +365,8 @@ void setup()
     }
   Serial.print("WiFi connected with IP : ");
   Serial.println(WiFi.localIP());
+  */
+  // ethernet
   /*
   WiFi.onEvent(WiFiEvent);
   ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);

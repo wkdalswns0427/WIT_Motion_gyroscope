@@ -1,8 +1,32 @@
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WiFiServer.h>
+const char* ssid = "yout SSID";
+const char* password = "your PW";
+const uint16_t port = 6040;//임시
+const char* host = "3.38.162.240"; // new RDS
+WiFiClient client;
+
 #include <HardwareSerial.h> //for rs485 comm
 #define RXD2 5
 #define TXD2 17
 HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
 
+/*
+#include <Arduino.h> //for ethernet
+#include <ETH.h>     //for ethernet
+#define ETH_POWER_PIN   16
+#define ETH_MDC_PIN     23
+#define ETH_MDIO_PIN    18
+#define ETH_ADDR        1
+#define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN
+#define ETH_TYPE        ETH_PHY_LAN8720
+static bool eth_connected = false;
+#include <HTTPClient.h>
+#include <string.h>
+*/
+
+#include <math.h>
 byte unlockMaster1[]={0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
 byte changeADDR1[] = {0x50, 0x06, 0x00, 0x1A, 0x00, 0x51, 0x64, 0x70};
 byte accCalmode1[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x01, 0x14, 0x4B};
@@ -26,7 +50,51 @@ byte recData1[12];
 byte recData2[12];
 byte trashBuffer[100];
 
+static byte accDiff[] = {0,0,0};
+static byte angDiff[] = {0,0,0};
+static byte angvelDiff[] = {0,0,0};
+
 int flag = 0;
+
+/*
+void WiFiEvent(WiFiEvent_t event)
+{
+
+  switch (event) {
+    case ARDUINO_EVENT_ETH_START:
+      Serial.println("ETH Started");
+      //set eth hostname here
+      ETH.setHostname("esp32-ethernet");
+      break;
+    case ARDUINO_EVENT_ETH_CONNECTED:
+      Serial.println("ETH Connected");
+      break;
+    case ARDUINO_EVENT_ETH_GOT_IP:
+      Serial.print("ETH MAC: ");
+      Serial.print(ETH.macAddress());
+      Serial.print(", IPv4: ");
+      Serial.print(ETH.localIP());
+      if (ETH.fullDuplex()) {
+        Serial.print(", FULL_DUPLEX");
+      }
+      Serial.print(", ");
+      Serial.print(ETH.linkSpeed());
+      Serial.println("Mbps");
+      eth_connected = true;
+      break;
+    case ARDUINO_EVENT_ETH_DISCONNECTED:
+      Serial.println("ETH Disconnected");
+      eth_connected = false;
+      break;
+    case ARDUINO_EVENT_ETH_STOP:
+      Serial.println("ETH Stopped");
+      eth_connected = false;
+      break;
+    default:
+      break;
+  }
+}
+*/
 
 void sendCommand(byte command[8], int prt){
   byte data[10];
@@ -266,11 +334,44 @@ void printAngVel(byte rec[]){
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
+byte* calculateDiff(byte arr[], int type){
+  for(int i=0; i<3; i++){
+    arr[i]=abs(((recData1[2*i+3]<<8)|recData1[4])-((recData2[2*i+4]<<8)|recData2[4]));
+    if(type==1){
+        arr[i] = arr[i]/(32768/16);
+      }
+    else if(type==2){
+        arr[i] = arr[i]/(32768/180);
+      }
+    else if(type==3){
+        arr[i] = arr[i]/(32768/2000);
+      }
+    }
+  Serial.print(arr[0]);Serial.print("   "); Serial.print(arr[1]);Serial.print("   "); Serial.println(arr[2]);
+  return arr;
+  }
+
 void setup() 
-{
+{ 
   Serial.begin(9600);
   rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
   rs485.flush();
+  // wifi
+  /*
+  WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED){
+    delay(500);
+    Serial.println("...");
+    }
+  Serial.print("WiFi connected with IP : ");
+  Serial.println(WiFi.localIP());
+  */
+  // ethernet
+  /*
+  WiFi.onEvent(WiFiEvent);
+  ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+  delay(10000);
+  */
   
   Serial.println("--------------- Serial Initiated ---------------");
   calibrateAcc(1);
@@ -291,14 +392,28 @@ void setup()
 
 void loop() 
 { 
+  int trial = 1;
+  if(!client.connect(host, port)){
+    Serial.println("Connection to Host Failed");
+    delay(1000);
+    trial++;
+    return;
+    }
   rs485.flush();
   if(++flag==1){
     Serial.println("WT901C485 read");
     }
+  
   readAcceleration(1);
-  readSensorAngle(1);
-  readAngularVelocity(1);
   readAcceleration(2);
+  calculateDiff(accDiff, 1);
+  
+  readSensorAngle(1);
   readSensorAngle(2);
+  calculateDiff(angDiff, 2);
+  
+  readAngularVelocity(1);
   readAngularVelocity(2);
+  calculateDiff(angvelDiff, 3);
+  delay(500);
 }
