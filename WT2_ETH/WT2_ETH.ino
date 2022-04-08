@@ -1,9 +1,9 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
-const char* ssid = "yout SSID";
-const char* password = "your PW";
-const uint16_t port = 6040;//임시
+const char* ssid = "toysmyth24G";
+const char* password = "xhdlTmalTm12#$";
+const uint16_t port = 5000;//sample
 const char* host = "3.38.162.240"; // new RDS
 WiFiClient client;
 
@@ -48,7 +48,22 @@ byte readAngVel2[] = {0x51, 0x03, 0x00, 0x37, 0x00, 0x03, 0xB8, 0x55};
 
 byte recData1[12];
 byte recData2[12];
-byte trashBuffer[100];
+byte trashBuffer[150];
+
+byte prevBuffer[3][6];
+byte newBuffer[3][6];
+/*
+ **********************************************************************
+ *           dev1[x] | dev1[y] | dev1[z] | dev2[x] | dev2[y] | dev2[z] |
+ *           -----------------------------------------------------------
+ *accel      |       |         |         |         |         |         |
+ *           -----------------------------------------------------------
+ *angle      |       |         |         |         |         |         |
+ *           -----------------------------------------------------------
+ *angularvel |       |         |         |         |         |         |
+ *           -----------------------------------------------------------
+ ***********************************************************************
+ */
 
 static byte accDiff[] = {0,0,0};
 static byte angDiff[] = {0,0,0};
@@ -232,7 +247,6 @@ void readSensorAngle(int type){
     sendCommand(readAngle1,0);
     Serial.println("Angle");
     delay(2000);
-  
     if(rs485_receive(recData1, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData1[i],HEX);
@@ -248,11 +262,11 @@ void readSensorAngle(int type){
     rs485.flush();
     delay(1000);
     }
+    
     else if(type==2){
     sendCommand(readAngle2,0);
     Serial.println("Angle");
     delay(2000);
-  
     if(rs485_receive(recData2, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData2[i],HEX);
@@ -313,6 +327,20 @@ void readAngularVelocity(int type){
     }
   }
 
+// device 1,2 // type 0,1,2
+void savebuffer(byte tarbuf[3][6], int device, int type){
+  if(device==1){
+    tarbuf[type][0]=((recData1[3]<<8)|recData1[4]);
+    tarbuf[type][1]=((recData1[5]<<8)|recData1[6]);
+    tarbuf[type][2]=((recData1[7]<<8)|recData1[8]);
+    }
+  else if(device==2){
+    tarbuf[type][3]=((recData2[3]<<8)|recData2[4]);
+    tarbuf[type][4]=((recData2[5]<<8)|recData2[6]);
+    tarbuf[type][5]=((recData2[7]<<8)|recData2[8]);
+    }
+  }
+
 void printAccel(byte rec[]){
   float data_x = ((rec[3]<<8)|rec[4])/(32768/16);
   float data_y = ((rec[5]<<8)|rec[6])/(32768/16);
@@ -333,21 +361,26 @@ void printAngVel(byte rec[]){
   float data_z = ((rec[7]<<8)|rec[8])/(32768/2000);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
-
-byte* calculateDiff(byte arr[], int type){
-  for(int i=0; i<3; i++){
-    arr[i]=abs(((recData1[2*i+3]<<8)|recData1[4])-((recData2[2*i+4]<<8)|recData2[4]));
-    if(type==1){
-        arr[i] = arr[i]/(32768/16);
+  
+// device 1,2 // type 0,1,2
+byte* calculateDiff(byte arr[], int device, int type){
+  for(int i=3*(device-1); i<3*(device-1)+3; i++){
+    if(type==0){
+        arr[i] = (abs(prevBuffer[type][i]/(32768/16)-newBuffer[type][i+3]/(32768/16)));
+      }
+    else if(type==1){
+        arr[i] = (abs(prevBuffer[type][i]/(32768/180)-newBuffer[type][i+3]/(32768/180)));
       }
     else if(type==2){
-        arr[i] = arr[i]/(32768/180);
-      }
-    else if(type==3){
-        arr[i] = arr[i]/(32768/2000);
+        arr[i] = (abs(prevBuffer[type][i]/(32768/2000)-newBuffer[type][i+3]/(32768/2000)));
       }
     }
-  Serial.print(arr[0]);Serial.print("   "); Serial.print(arr[1]);Serial.print("   "); Serial.println(arr[2]);
+  if(device==1){
+    Serial.print(arr[0]);Serial.print("   "); Serial.print(arr[1]);Serial.print("   "); Serial.println(arr[2]);
+    }
+  else{
+    Serial.print(arr[3]);Serial.print("   "); Serial.print(arr[4]);Serial.print("   "); Serial.println(arr[5]);
+    }
   return arr;
   }
 
@@ -366,6 +399,7 @@ void setup()
   Serial.print("WiFi connected with IP : ");
   Serial.println(WiFi.localIP());
   */
+  
   // ethernet
   /*
   WiFi.onEvent(WiFiEvent);
@@ -376,12 +410,13 @@ void setup()
   Serial.println("--------------- Serial Initiated ---------------");
   calibrateAcc(1);
   calibrateAcc(2);
-  //calibrateMag(1);
-  //calibrateMag(2);
+  calibrateMag(1);
+  calibrateMag(2);
   Serial.println("--------------- Calibration Done ---------------");
+  rs485.flush();
   
-  if(rs485_receive(trashBuffer, 100) != -1){
-    for(int i = 0;i<100;i++){
+  if(rs485_receive(trashBuffer, 150) != -1){
+    for(int i = 0;i<150;i++){
       Serial.print(trashBuffer[i],HEX);
       Serial.print(",");
       }
@@ -392,6 +427,7 @@ void setup()
 
 void loop() 
 { 
+  /*
   int trial = 1;
   if(!client.connect(host, port)){
     Serial.println("Connection to Host Failed");
@@ -399,21 +435,71 @@ void loop()
     trial++;
     return;
     }
+  */
   rs485.flush();
   if(++flag==1){
     Serial.println("WT901C485 read");
+    readAcceleration(1);
+    savebuffer(prevBuffer, 1, 0);
+    readAcceleration(2);
+    savebuffer(prevBuffer, 2, 0);
+    
+    readSensorAngle(1);
+    savebuffer(prevBuffer, 1, 1);
+    readSensorAngle(2);
+    savebuffer(prevBuffer, 2, 1);
+    
+    readAngularVelocity(1);
+    savebuffer(prevBuffer, 1, 2);
+    readAngularVelocity(2);
+    savebuffer(prevBuffer, 2, 2);
+    delay(500);
+    for(int i=0; i<3;i++){
+      for(int j=0; j<6;j++){
+        Serial.print(prevBuffer[i][j]);Serial.print("   ");
+        }
+      Serial.println();
+      }
     }
   
   readAcceleration(1);
+  savebuffer(newBuffer, 1, 0);
   readAcceleration(2);
-  calculateDiff(accDiff, 1);
+  savebuffer(newBuffer, 2, 0);
   
   readSensorAngle(1);
+  savebuffer(newBuffer, 1, 1);
   readSensorAngle(2);
-  calculateDiff(angDiff, 2);
-  
+  savebuffer(newBuffer, 2, 1);
+    
   readAngularVelocity(1);
+  savebuffer(newBuffer, 1, 2);
   readAngularVelocity(2);
-  calculateDiff(angvelDiff, 3);
+  savebuffer(newBuffer, 2, 2);
+
+  Serial.println();
+  calculateDiff(accDiff, 1, 0);
+  calculateDiff(accDiff, 2, 0);
+  calculateDiff(angDiff, 1, 1);
+  calculateDiff(angDiff, 2, 1);
+  calculateDiff(angvelDiff, 1, 2);
+  calculateDiff(angvelDiff, 2, 2);
+  for(int i=0; i<3;i++){
+      for(int j=0; j<6;j++){
+        Serial.print(prevBuffer[i][j]);Serial.print("   ");
+        }
+      Serial.println();
+      }
+  for(int i=0; i<3;i++){
+      for(int j=0; j<6;j++){
+        Serial.print(newBuffer[i][j]);Serial.print("   ");
+        }
+      Serial.println();
+      }
+  for(int i=0; i<3;i++){
+    for(int j=0; j<6;j++){
+      prevBuffer[i][j] = newBuffer[i][j];
+      }
+  }
   delay(500);
 }
