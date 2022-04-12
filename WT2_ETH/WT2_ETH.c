@@ -11,10 +11,6 @@ HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
 #include <string.h>
 StaticJsonDocument<1024> sensor;
 
-const char* serverName = "http://3.38.162.240:5000/";
-IPAddress hostIP(3, 28, 162, 240);
-int SERVER_PORT = 5000;
-
 unsigned long long int uS_TO_S_FACTOR = 1000000ULL;
 unsigned long long int TIME_TO_SLEEP = 0;
 RTC_DATA_ATTR int bootCount = 0;
@@ -516,8 +512,7 @@ void postHTTP(){
   String requestBody;
   serializeJson(sensor, requestBody);
 
-//  http.begin("http://3.38.162.240:5000/"); 
-  http.begin("http://restapi.toysmythiot.com:8080/v1/sensor/insert");
+  http.begin("http://restapi.*****************");
   http.addHeader("Content-Type", "application/json", "Content-Length", requestBody.length());
 
   int httpResponseCode = http.POST(requestBody);
