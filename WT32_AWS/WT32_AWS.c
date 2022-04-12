@@ -517,8 +517,8 @@ void postHTTP(){
   String requestBody;
   serializeJson(sensor, requestBody);
 
-//  http.begin("http://3.38.162.240:5000/"); 
-  http.begin("http://restapi.toysmythiot.com:8080/v1/sensor/insert");
+
+  http.begin("http://apiurl");
   http.addHeader("Content-Type", "application/json", "Content-Length", requestBody.length());
 
   int httpResponseCode = http.POST(requestBody);
