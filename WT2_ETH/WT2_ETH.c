@@ -2,32 +2,18 @@
 #define RXD2 5
 #define TXD2 17
 HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
-#define device_mac "D86595012345"
-#define SENSOR_ACC1_X 600
-#define SENSOR_ACC1_Y 601
-#define SENSOR_ACC1_Z 602
-#define SENSOR_ANG1_X 603
-#define SENSOR_ANG1_Y 604
-#define SENSOR_ANG1_Z 605
-#define SENSOR_ANGVEL1_X 606
-#define SENSOR_ANGVEL1_Y 607
-#define SENSOR_ANGVEL1_Z 608
-#define ERRCNT_FAIL_THRESHOLD 10
-#define ERRCNT_SUCCESS_THRESHOLD 3
 
+#include "deviceConfig.h"
 #include <Arduino.h> //for ethernet
 #include <ETH.h>     //for ethernet
 #include <ArduinoJson.h>
-#define ETH_POWER_PIN   16
-#define ETH_MDC_PIN     23
-#define ETH_MDIO_PIN    18
-#define ETH_ADDR        1
-#define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN
-#define ETH_TYPE        ETH_PHY_LAN8720
-static bool eth_connected = false;
 #include <HTTPClient.h>
 #include <string.h>
 StaticJsonDocument<1024> sensor;
+
+const char* serverName = "http://3.38.162.240:5000/";
+IPAddress hostIP(3, 28, 162, 240);
+int SERVER_PORT = 5000;
 
 unsigned long long int uS_TO_S_FACTOR = 1000000ULL;
 unsigned long long int TIME_TO_SLEEP = 0;
@@ -55,7 +41,7 @@ byte readAngVel2[] = {0x51, 0x03, 0x00, 0x37, 0x00, 0x03, 0xB8, 0x55};
 
 byte recData1[12];
 byte recData2[12];
-byte trashBuffer[150];
+byte trashBuffer[180];
 
 byte prevBuffer[3][6];
 byte newBuffer[3][6];
@@ -486,35 +472,42 @@ void clearBuffer(){
   }
 }
 void sensorPOST(){
+
+  struct timeval tv_now;
+  gettimeofday(&tv_now, NULL);
+  int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+
   sensor["mac"]= device_mac;
   sensor["type"]="SENSOR";
   sensor["data"][0]["sensortype"] = SENSOR_ACC1_X;
   sensor["data"][0]["value"] = diffBuffer[0][0];
-//  sensor["data"][0]["time"] = time_us;
+  sensor["data"][0]["time"] = time_us;
   sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
   sensor["data"][1]["value"] = diffBuffer[0][1];
-//  sensor["data"][1]["time"] = time_us;
+  sensor["data"][1]["time"] = time_us;
   sensor["data"][2]["sensortype"] = SENSOR_ACC1_Z;
   sensor["data"][2]["value"] = diffBuffer[0][2];
-//  sensor["data"][2]["time"] = time_us;
+  sensor["data"][2]["time"] = time_us;
   sensor["data"][3]["sensortype"] = SENSOR_ANG1_X;
   sensor["data"][3]["value"] = diffBuffer[1][0];
-//  sensor["data"][3]["time"] = time_us;
+  sensor["data"][3]["time"] = time_us;
   sensor["data"][4]["sensortype"] = SENSOR_ANG1_Y;
   sensor["data"][4]["value"] = diffBuffer[1][1];
-//  sensor["data"][4]["time"] = time_us;
+  sensor["data"][4]["time"] = time_us;
   sensor["data"][5]["sensortype"] = SENSOR_ANG1_Z;
   sensor["data"][5]["value"] = diffBuffer[1][2];
-//  sensor["data"][5]["time"] = time_us;
+  sensor["data"][5]["time"] = time_us;
   sensor["data"][6]["sensortype"] = SENSOR_ANGVEL1_X;
   sensor["data"][6]["value"] = diffBuffer[2][0];
-//  sensor["data"][6]["time"] = time_us;
+  sensor["data"][6]["time"] = time_us;
+  /*
   sensor["data"][7]["sensortype"] = SENSOR_ANGVEL1_Y;
   sensor["data"][7]["value"] = diffBuffer[2][1];
-//  sensor["data"][7]["time"] = time_us;
+  sensor["data"][7]["time"] = time_us;
   sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
   sensor["data"][8]["value"] = diffBuffer[2][2];
-//  sensor["data"][8]["time"] = time_us;
+  sensor["data"][8]["time"] = time_us;
+  */
   }
 
 void postHTTP(){
@@ -523,7 +516,8 @@ void postHTTP(){
   String requestBody;
   serializeJson(sensor, requestBody);
 
-  http.begin("http://restapi.toysmythiot.com:8081/v1/sensor/insert");
+//  http.begin("http://3.38.162.240:5000/"); 
+  http.begin("http://restapi.toysmythiot.com:8080/v1/sensor/insert");
   http.addHeader("Content-Type", "application/json", "Content-Length", requestBody.length());
 
   int httpResponseCode = http.POST(requestBody);
@@ -577,8 +571,8 @@ void setup()
   Serial.println("--------------- Calibration Done ---------------");
   rs485.flush();
   
-  if(rs485_receive(trashBuffer, 150) != -1){
-    for(int i = 0;i<150;i++){
+  if(rs485_receive(trashBuffer, 180) != -1){
+    for(int i = 0;i<180;i++){
       Serial.print(trashBuffer[i],HEX);
       Serial.print(",");
       }
