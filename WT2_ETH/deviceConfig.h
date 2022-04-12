@@ -1,4 +1,4 @@
-#define device_mac "D86595123456"
+#define device_mac "************"
 #define SENSOR_ACC1_X 600
 #define SENSOR_ACC1_Y 601
 #define SENSOR_ACC1_Z 602
