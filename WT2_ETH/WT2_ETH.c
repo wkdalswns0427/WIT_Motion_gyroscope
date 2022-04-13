@@ -467,14 +467,14 @@ void clearBuffer(){
       }
   }
 }
-void sensorPOST(int sensor){
+void sensorPOST(int sen){
 
   struct timeval tv_now;
   gettimeofday(&tv_now, NULL);
   int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
   sensor["mac"]= device_mac;
-  if(sensor==1){
+  if(sen==1){
     sensor["type"]="SENSOR1";
     sensor["data"][0]["sensortype"] = SENSOR_ACC1_X;
     sensor["data"][0]["value"] = diffBuffer[0][0];
@@ -504,7 +504,7 @@ void sensorPOST(int sensor){
     sensor["data"][8]["value"] = diffBuffer[2][2];
     sensor["data"][8]["time"] = time_us;
     }
-  else if(sensor==2){
+  else if(sen==2){
     sensor["type"]="SENSOR2";
     sensor["data"][0]["sensortype"] = SENSOR_ACC1_X;
     sensor["data"][0]["value"] = diffBuffer[0][3];
@@ -536,9 +536,9 @@ void sensorPOST(int sensor){
     }
   }
 
-void postHTTP(int sensor){
+void postHTTP(int sen){
   HTTPClient http;
-  sensorPOST(sensor);
+  sensorPOST(sen);
   String requestBody;
   serializeJson(sensor, requestBody);
 
