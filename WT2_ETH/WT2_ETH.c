@@ -9,13 +9,14 @@ HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <string.h>
+#include <math.h>
 StaticJsonDocument<1024> sensor;
 
 unsigned long long int uS_TO_S_FACTOR = 1000000ULL;
 unsigned long long int TIME_TO_SLEEP = 0;
 RTC_DATA_ATTR int bootCount = 0;
 
-#include <math.h>
+
 byte unlockMaster1[]={0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1};
 byte changeADDR1[] = {0x50, 0x06, 0x00, 0x1A, 0x00, 0x51, 0x64, 0x70};
 byte accCalmode1[]={0x50, 0x06, 0x00, 0x01, 0x00, 0x01, 0x14, 0x4B};
@@ -39,10 +40,12 @@ byte recData1[12];
 byte recData2[12];
 byte trashBuffer[180];
 
-byte prevBuffer[3][6];
-byte newBuffer[3][6];
-byte diffBuffer[3][6];
+float prevBuffer[3][6];
+float newBuffer[3][6];
+float diffBuffer[3][6];
+
 /*
+ * buffer structure
  **********************************************************************
  *           dev1[x] | dev1[y] | dev1[z] | dev2[x] | dev2[y] | dev2[z] |
  *           -----------------------------------------------------------
@@ -55,9 +58,9 @@ byte diffBuffer[3][6];
  ***********************************************************************
  */
 
-static byte accDiff[6];
-static byte angDiff[6];
-static byte angvelDiff[6];
+static float accDiff[6];
+static float angDiff[6];
+static float angvelDiff[6];
 
 int flag = 0;
 
@@ -252,7 +255,6 @@ void readAcceleration(int type){
     sendCommand(readAcc1,0);
     Serial.println("Acceleration");
     delay(2000);
-  
     if(rs485_receive(recData1, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData1[i],HEX);
@@ -268,11 +270,11 @@ void readAcceleration(int type){
     rs485.flush();
     delay(1000);
     }
-    else if(type==2){
+
+  else if(type==2){
     sendCommand(readAcc2,0);
     Serial.println("Acceleration");
     delay(2000);
-  
     if(rs485_receive(recData2, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData2[i],HEX);
@@ -311,7 +313,7 @@ void readSensorAngle(int type){
     delay(1000);
     }
     
-    else if(type==2){
+  else if(type==2){
     sendCommand(readAngle2,0);
     Serial.println("Angle");
     delay(2000);
@@ -337,7 +339,6 @@ void readAngularVelocity(int type){
     sendCommand(readAngVel1,0);
     Serial.println("Angular Velocity");
     delay(2000);
-  
     if(rs485_receive(recData1, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData1[i],HEX);
@@ -353,11 +354,11 @@ void readAngularVelocity(int type){
     rs485.flush();
     delay(1000);
     }
-    else if(type==2){
+
+  else if(type==2){
     sendCommand(readAngVel2,0);
     Serial.println("Angular Velocity");
     delay(2000);
-  
     if(rs485_receive(recData2, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData2[i],HEX);
@@ -376,7 +377,7 @@ void readAngularVelocity(int type){
   }
 
 // device 1,2 // type 0,1,2
-void savebuffer(byte tarbuf[3][6], int device, int type){
+void savebuffer(float tarbuf[3][6], int device, int type){
   if(device==1){
     tarbuf[type][0]=((recData1[3]<<8)|recData1[4]);
     tarbuf[type][1]=((recData1[5]<<8)|recData1[6]);
@@ -411,16 +412,19 @@ void printAngVel(byte rec[]){
   }
   
 // device 1,2 // type 0,1,2
-byte* calculateDiff(byte arr[], int device, int type){
+void calculateDiff(float arr[], int device, int type){
   for(int i=3*(device-1); i<3*(device-1)+3; i++){
     if(type==0){
-        arr[i] = (abs(prevBuffer[type][i]/(32768/16)-newBuffer[type][i]/(32768/16)));
+        arr[i] = (abs(newBuffer[type][i]/(32768/16)));
+//        arr[i] = (abs(prevBuffer[type][i]/(32768/16)-newBuffer[type][i]/(32768/16)));
       }
     else if(type==1){
-        arr[i] = (abs(prevBuffer[type][i]/(32768/180)-newBuffer[type][i]/(32768/180)));
+        arr[i] = (abs(newBuffer[type][i]/(32768/180)));
+//        arr[i] = (abs(prevBuffer[type][i]/(32768/180)-newBuffer[type][i]/(32768/180)));
       }
     else if(type==2){
-        arr[i] = (abs(prevBuffer[type][i]/(32768/2000)-newBuffer[type][i]/(32768/2000)));
+        arr[i] = (abs(newBuffer[type][i]/(32768/2000)));
+//        arr[i] = (abs(prevBuffer[type][i]/(32768/2000)-newBuffer[type][i]/(32768/2000)));
       }
     diffBuffer[type][i]=arr[i];
     }
@@ -430,10 +434,10 @@ byte* calculateDiff(byte arr[], int device, int type){
   else{
     Serial.print(arr[3]);Serial.print("   "); Serial.print(arr[4]);Serial.print("   "); Serial.println(arr[5]);
     }
-  return arr;
+  
   }
 
-void readSensor(byte buf[3][6]){
+void readSensor(float buf[3][6]){
   readAcceleration(1);
   savebuffer(buf, 1, 0);
   readAcceleration(2);
@@ -464,20 +468,42 @@ void clearBuffer(){
   for(int i=0; i<3;i++){
     for(int j=0; j<6;j++){
       prevBuffer[i][j] = newBuffer[i][j];
+      newBuffer[i][j] = 0;
       }
   }
 }
 void sensorPOST(int sen){
+<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
+=======
 
   struct timeval tv_now;
   gettimeofday(&tv_now, NULL);
   int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
 
+>>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
   sensor["mac"]= device_mac;
   if(sen==1){
     sensor["type"]="SENSOR1";
     sensor["data"][0]["sensortype"] = SENSOR_ACC1_X;
     sensor["data"][0]["value"] = diffBuffer[0][0];
+<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
+    sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
+    sensor["data"][1]["value"] = diffBuffer[0][1];
+    sensor["data"][2]["sensortype"] = SENSOR_ACC1_Z;
+    sensor["data"][2]["value"] = diffBuffer[0][2];
+    sensor["data"][3]["sensortype"] = SENSOR_ANG1_X;
+    sensor["data"][3]["value"] = diffBuffer[1][0];
+    sensor["data"][4]["sensortype"] = SENSOR_ANG1_Y;
+    sensor["data"][4]["value"] = diffBuffer[1][1];
+    sensor["data"][5]["sensortype"] = SENSOR_ANG1_Z;
+    sensor["data"][5]["value"] = diffBuffer[1][2];
+    sensor["data"][6]["sensortype"] = SENSOR_ANGVEL1_X;
+    sensor["data"][6]["value"] = diffBuffer[2][0];
+    sensor["data"][7]["sensortype"] = SENSOR_ANGVEL1_Y;
+    sensor["data"][7]["value"] = diffBuffer[2][1];
+    sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
+    sensor["data"][8]["value"] = diffBuffer[2][2];
+=======
     sensor["data"][0]["time"] = time_us;
     sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
     sensor["data"][1]["value"] = diffBuffer[0][1];
@@ -503,11 +529,30 @@ void sensorPOST(int sen){
     sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
     sensor["data"][8]["value"] = diffBuffer[2][2];
     sensor["data"][8]["time"] = time_us;
+>>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
     }
   else if(sen==2){
     sensor["type"]="SENSOR2";
     sensor["data"][0]["sensortype"] = SENSOR_ACC1_X;
     sensor["data"][0]["value"] = diffBuffer[0][3];
+<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
+    sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
+    sensor["data"][1]["value"] = diffBuffer[0][4];
+    sensor["data"][2]["sensortype"] = SENSOR_ACC1_Z;
+    sensor["data"][2]["value"] = diffBuffer[0][5];
+    sensor["data"][3]["sensortype"] = SENSOR_ANG1_X;
+    sensor["data"][3]["value"] = diffBuffer[1][3];
+    sensor["data"][4]["sensortype"] = SENSOR_ANG1_Y;
+    sensor["data"][4]["value"] = diffBuffer[1][4];
+    sensor["data"][5]["sensortype"] = SENSOR_ANG1_Z;
+    sensor["data"][5]["value"] = diffBuffer[1][5];
+    sensor["data"][6]["sensortype"] = SENSOR_ANGVEL1_X;
+    sensor["data"][6]["value"] = diffBuffer[2][3];
+    sensor["data"][7]["sensortype"] = SENSOR_ANGVEL1_Y;
+    sensor["data"][7]["value"] = diffBuffer[2][4];
+    sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
+    sensor["data"][8]["value"] = diffBuffer[2][5];
+=======
     sensor["data"][0]["time"] = time_us;
     sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
     sensor["data"][1]["value"] = diffBuffer[0][4];
@@ -533,6 +578,7 @@ void sensorPOST(int sen){
     sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
     sensor["data"][8]["value"] = diffBuffer[2][5];
     sensor["data"][8]["time"] = time_us;
+>>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
     }
   }
 
@@ -542,7 +588,11 @@ void postHTTP(int sen){
   String requestBody;
   serializeJson(sensor, requestBody);
 
+<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
+  http.begin("http://sacheonchallenge.toysmythiot.com:5000/sensor"); 
+=======
   http.begin("http://restapi_uri");
+>>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
   http.addHeader("Content-Type", "application/json", "Content-Length", requestBody.length());
 
   int httpResponseCode = http.POST(requestBody);
