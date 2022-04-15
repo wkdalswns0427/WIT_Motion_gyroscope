@@ -11,6 +11,7 @@ HardwareSerial rs485(2); // rxtx mode 2 of 0,1,2
 #include <string.h>
 #include <math.h>
 StaticJsonDocument<1024> sensor;
+unsigned int mask = 32767;
 
 unsigned long long int uS_TO_S_FACTOR = 1000000ULL;
 unsigned long long int TIME_TO_SLEEP = 0;
@@ -36,12 +37,12 @@ byte readAngle2[] = {0x51, 0x03, 0x00, 0x3D, 0x00, 0x03, 0x98, 0x57};
 byte readAcc2[] = {0x51, 0x03, 0x00, 0x34, 0x00, 0x03, 0x48, 0x55};
 byte readAngVel2[] = {0x51, 0x03, 0x00, 0x37, 0x00, 0x03, 0xB8, 0x55};
 
-byte recData1[12];
-byte recData2[12];
-byte trashBuffer[180];
+short recData1[12];
+short recData2[12];
+short trashBuffer[180];
 
-float prevBuffer[3][6];
-float newBuffer[3][6];
+short prevBuffer[3][6];
+short newBuffer[3][6];
 float diffBuffer[3][6];
 
 /*
@@ -235,7 +236,7 @@ void calibrateMag(int type){
   }
   
 
-int rs485_receive(byte recv[], int num){
+int rs485_receive(short recv[], int num){
     unsigned long t = millis(); 
     while(1){
       if(millis() - t > 10000){
@@ -350,7 +351,8 @@ void readAngularVelocity(int type){
       Serial.println("no resp");
       Serial.println();    
       } 
-    printAngVel(recData1);
+      
+//    printAngVel(recData1);/
     rs485.flush();
     delay(1000);
     }
@@ -377,7 +379,7 @@ void readAngularVelocity(int type){
   }
 
 // device 1,2 // type 0,1,2
-void savebuffer(float tarbuf[3][6], int device, int type){
+void savebuffer(short tarbuf[3][6], int device, int type){
   if(device==1){
     tarbuf[type][0]=((recData1[3]<<8)|recData1[4]);
     tarbuf[type][1]=((recData1[5]<<8)|recData1[6]);
@@ -390,21 +392,21 @@ void savebuffer(float tarbuf[3][6], int device, int type){
     }
   }
 
-void printAccel(byte rec[]){
-  float data_x = ((rec[3]<<8)|rec[4])/(32768/16);
-  float data_y = ((rec[5]<<8)|rec[6])/(32768/16);
-  float data_z = ((rec[7]<<8)|rec[8])/(32768/16);
+void printAccel(short rec[]){
+  short data_x = ((rec[3]<<8)|rec[4])/(32768/16);
+  short data_y = ((rec[5]<<8)|rec[6])/(32768/16);
+  short data_z = ((rec[7]<<8)|rec[8])/(32768/16);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
-void printAngle(byte rec[]){
-  float data_x = ((rec[3]<<8)|rec[4])/(32768/180);
-  float data_y = ((rec[5]<<8)|rec[6])/(32768/180);
-  float data_z = ((rec[7]<<8)|rec[8])/(32768/180);
+void printAngle(short rec[]){
+  short data_x = ((rec[3]<<8)|rec[4])/(32768/180);
+  short data_y = ((rec[5]<<8)|rec[6])/(32768/180);
+  short data_z = ((rec[7]<<8)|rec[8])/(32768/180);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
-void printAngVel(byte rec[]){
+void printAngVel(short rec[]){
   float data_x = ((rec[3]<<8)|rec[4])/(32768/2000);
   float data_y = ((rec[5]<<8)|rec[6])/(32768/2000);
   float data_z = ((rec[7]<<8)|rec[8])/(32768/2000);
@@ -415,15 +417,15 @@ void printAngVel(byte rec[]){
 void calculateDiff(float arr[], int device, int type){
   for(int i=3*(device-1); i<3*(device-1)+3; i++){
     if(type==0){
-        arr[i] = (abs(newBuffer[type][i]/(32768/16)));
+        arr[i] = (newBuffer[type][i]/(32768/16));
 //        arr[i] = (abs(prevBuffer[type][i]/(32768/16)-newBuffer[type][i]/(32768/16)));
       }
     else if(type==1){
-        arr[i] = (abs(newBuffer[type][i]/(32768/180)));
+        arr[i] = (newBuffer[type][i]/(32768/180));
 //        arr[i] = (abs(prevBuffer[type][i]/(32768/180)-newBuffer[type][i]/(32768/180)));
       }
     else if(type==2){
-        arr[i] = (abs(newBuffer[type][i]/(32768/2000)));
+        arr[i] = (newBuffer[type][i]/(32768/2000));
 //        arr[i] = (abs(prevBuffer[type][i]/(32768/2000)-newBuffer[type][i]/(32768/2000)));
       }
     diffBuffer[type][i]=arr[i];
@@ -437,14 +439,14 @@ void calculateDiff(float arr[], int device, int type){
   
   }
 
-void readSensor(float buf[3][6]){
-  readAcceleration(1);
-  savebuffer(buf, 1, 0);
+void readSensor(short buf[3][6]){
+//  readAcceleration(1);/
+//  savebuffer(buf, 1, 0);/
 //  readAcceleration(2);/
 //  savebuffer(buf, 2, 0);/
   
-  readSensorAngle(1);
-  savebuffer(buf, 1, 1);
+//  readSensorAngle(1);/
+//  savebuffer(buf, 1, 1);/
 //  readSensorAngle(2);/
 //  savebuffer(buf, 2, 1);/
     
@@ -456,9 +458,9 @@ void readSensor(float buf[3][6]){
 }
 
 void calcSensor(){
-  calculateDiff(accDiff, 1, 0);
+//  calculateDiff(accDiff, 1, 0);/
 //  calculateDiff(accDiff, 2, 0);/
-  calculateDiff(angDiff, 1, 1);
+//  calculateDiff(angDiff, 1, 1);/
 //  calculateDiff(angDiff, 2, 1);/
   calculateDiff(angvelDiff, 1, 2);
 //  calculateDiff(angvelDiff, 2, 2);/
