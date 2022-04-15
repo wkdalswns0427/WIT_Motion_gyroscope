@@ -473,20 +473,11 @@ void clearBuffer(){
   }
 }
 void sensorPOST(int sen){
-<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
-=======
-
-  struct timeval tv_now;
-  gettimeofday(&tv_now, NULL);
-  int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
-
->>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
   sensor["mac"]= device_mac;
   if(sen==1){
     sensor["type"]="SENSOR1";
     sensor["data"][0]["sensortype"] = SENSOR_ACC1_X;
     sensor["data"][0]["value"] = diffBuffer[0][0];
-<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
     sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
     sensor["data"][1]["value"] = diffBuffer[0][1];
     sensor["data"][2]["sensortype"] = SENSOR_ACC1_Z;
@@ -503,39 +494,11 @@ void sensorPOST(int sen){
     sensor["data"][7]["value"] = diffBuffer[2][1];
     sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
     sensor["data"][8]["value"] = diffBuffer[2][2];
-=======
-    sensor["data"][0]["time"] = time_us;
-    sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
-    sensor["data"][1]["value"] = diffBuffer[0][1];
-    sensor["data"][1]["time"] = time_us;
-    sensor["data"][2]["sensortype"] = SENSOR_ACC1_Z;
-    sensor["data"][2]["value"] = diffBuffer[0][2];
-    sensor["data"][2]["time"] = time_us;
-    sensor["data"][3]["sensortype"] = SENSOR_ANG1_X;
-    sensor["data"][3]["value"] = diffBuffer[1][0];
-    sensor["data"][3]["time"] = time_us;
-    sensor["data"][4]["sensortype"] = SENSOR_ANG1_Y;
-    sensor["data"][4]["value"] = diffBuffer[1][1];
-    sensor["data"][4]["time"] = time_us;
-    sensor["data"][5]["sensortype"] = SENSOR_ANG1_Z;
-    sensor["data"][5]["value"] = diffBuffer[1][2];
-    sensor["data"][5]["time"] = time_us;
-    sensor["data"][6]["sensortype"] = SENSOR_ANGVEL1_X;
-    sensor["data"][6]["value"] = diffBuffer[2][0];
-    sensor["data"][6]["time"] = time_us;
-    sensor["data"][7]["sensortype"] = SENSOR_ANGVEL1_Y;
-    sensor["data"][7]["value"] = diffBuffer[2][1];
-    sensor["data"][7]["time"] = time_us;
-    sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
-    sensor["data"][8]["value"] = diffBuffer[2][2];
-    sensor["data"][8]["time"] = time_us;
->>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
     }
   else if(sen==2){
     sensor["type"]="SENSOR2";
     sensor["data"][0]["sensortype"] = SENSOR_ACC1_X;
     sensor["data"][0]["value"] = diffBuffer[0][3];
-<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
     sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
     sensor["data"][1]["value"] = diffBuffer[0][4];
     sensor["data"][2]["sensortype"] = SENSOR_ACC1_Z;
@@ -552,33 +515,6 @@ void sensorPOST(int sen){
     sensor["data"][7]["value"] = diffBuffer[2][4];
     sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
     sensor["data"][8]["value"] = diffBuffer[2][5];
-=======
-    sensor["data"][0]["time"] = time_us;
-    sensor["data"][1]["sensortype"] = SENSOR_ACC1_Y;
-    sensor["data"][1]["value"] = diffBuffer[0][4];
-    sensor["data"][1]["time"] = time_us;
-    sensor["data"][2]["sensortype"] = SENSOR_ACC1_Z;
-    sensor["data"][2]["value"] = diffBuffer[0][5];
-    sensor["data"][2]["time"] = time_us;
-    sensor["data"][3]["sensortype"] = SENSOR_ANG1_X;
-    sensor["data"][3]["value"] = diffBuffer[1][3];
-    sensor["data"][3]["time"] = time_us;
-    sensor["data"][4]["sensortype"] = SENSOR_ANG1_Y;
-    sensor["data"][4]["value"] = diffBuffer[1][4];
-    sensor["data"][4]["time"] = time_us;
-    sensor["data"][5]["sensortype"] = SENSOR_ANG1_Z;
-    sensor["data"][5]["value"] = diffBuffer[1][5];
-    sensor["data"][5]["time"] = time_us;
-    sensor["data"][6]["sensortype"] = SENSOR_ANGVEL1_X;
-    sensor["data"][6]["value"] = diffBuffer[2][3];
-    sensor["data"][6]["time"] = time_us;
-    sensor["data"][7]["sensortype"] = SENSOR_ANGVEL1_Y;
-    sensor["data"][7]["value"] = diffBuffer[2][4];
-    sensor["data"][7]["time"] = time_us;
-    sensor["data"][8]["sensortype"] = SENSOR_ANGVEL1_Z;
-    sensor["data"][8]["value"] = diffBuffer[2][5];
-    sensor["data"][8]["time"] = time_us;
->>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
     }
   }
 
@@ -587,12 +523,7 @@ void postHTTP(int sen){
   sensorPOST(sen);
   String requestBody;
   serializeJson(sensor, requestBody);
-
-<<<<<<< HEAD:WT2_ETH/WT2_ETH.ino
-  http.begin("http://sacheonchallenge.toysmythiot.com:5000/sensor"); 
-=======
   http.begin("http://restapi_uri");
->>>>>>> dc371a2fe6385c03d77ab9950b093e39726cf611:WT2_ETH/WT2_ETH.c
   http.addHeader("Content-Type", "application/json", "Content-Length", requestBody.length());
 
   int httpResponseCode = http.POST(requestBody);
