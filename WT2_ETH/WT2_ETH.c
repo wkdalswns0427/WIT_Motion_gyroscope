@@ -186,7 +186,7 @@ void calibrateAcc(int type){
       sendCommand(unlockMaster1,1);
       delay(500);
       sendCommand(accCalmode1,1);
-      delay(5000);
+      delay(6000);
       sendCommand(setNormal1,1);
       delay(1000);
       sendCommand(saveConfig1,1);
@@ -197,7 +197,7 @@ void calibrateAcc(int type){
       sendCommand(unlockMaster2,1);
       delay(500);
       sendCommand(accCalmode2,1);
-      delay(5000);
+      delay(6000);
       sendCommand(setNormal2,1);
       delay(1000);
       sendCommand(saveConfig2,1);
@@ -254,7 +254,7 @@ void readAcceleration(int type){
   if(type==1){
     sendCommand(readAcc1,0);
     Serial.println("Acceleration");
-    delay(2000);
+    
     if(rs485_receive(recData1, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData1[i],HEX);
@@ -268,13 +268,13 @@ void readAcceleration(int type){
       } 
     printAccel(recData1);
     rs485.flush();
-    delay(1000);
+    delay(10);
     }
 
   else if(type==2){
     sendCommand(readAcc2,0);
     Serial.println("Acceleration");
-    delay(2000);
+    
     if(rs485_receive(recData2, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData2[i],HEX);
@@ -288,7 +288,7 @@ void readAcceleration(int type){
       } 
     printAccel(recData2);
     rs485.flush();
-    delay(1000);
+    delay(10);
     }
   }
 
@@ -296,7 +296,7 @@ void readSensorAngle(int type){
   if(type==1){
     sendCommand(readAngle1,0);
     Serial.println("Angle");
-    delay(2000);
+    
     if(rs485_receive(recData1, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData1[i],HEX);
@@ -310,13 +310,13 @@ void readSensorAngle(int type){
       } 
     printAngle(recData1);
     rs485.flush();
-    delay(1000);
+    delay(10);
     }
     
   else if(type==2){
     sendCommand(readAngle2,0);
     Serial.println("Angle");
-    delay(2000);
+    
     if(rs485_receive(recData2, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData2[i],HEX);
@@ -330,7 +330,7 @@ void readSensorAngle(int type){
       } 
     printAngle(recData2);
     rs485.flush();
-    delay(1000);
+    delay(10);
     }
   }
 
@@ -338,7 +338,7 @@ void readAngularVelocity(int type){
   if(type==1){
     sendCommand(readAngVel1,0);
     Serial.println("Angular Velocity");
-    delay(2000);
+    
     if(rs485_receive(recData1, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData1[i],HEX);
@@ -352,13 +352,13 @@ void readAngularVelocity(int type){
       } 
     printAngVel(recData1);
     rs485.flush();
-    delay(1000);
+    delay(10);
     }
 
   else if(type==2){
     sendCommand(readAngVel2,0);
     Serial.println("Angular Velocity");
-    delay(2000);
+    
     if(rs485_receive(recData2, 11) != -1){
       for(int i = 0;i<11;i++){
         Serial.print(recData2[i],HEX);
@@ -372,7 +372,7 @@ void readAngularVelocity(int type){
       } 
     printAngVel(recData2);
     rs485.flush();
-    delay(1000);
+    delay(10);
     }
   }
 
@@ -391,23 +391,23 @@ void savebuffer(short tarbuf[3][6], int device, int type){
   }
 
 void printAccel(short rec[]){
-  float data_x = ((rec[3]<<8)|rec[4])/(32768/16);
-  float data_y = ((rec[5]<<8)|rec[6])/(32768/16);
-  float data_z = ((rec[7]<<8)|rec[8])/(32768/16);
+  short data_x = ((rec[3]<<8)|rec[4])/(32768/16);
+  short data_y = ((rec[5]<<8)|rec[6])/(32768/16);
+  short data_z = ((rec[7]<<8)|rec[8])/(32768/16);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
 void printAngle(short rec[]){
-  float data_x = ((rec[3]<<8)|rec[4])/(32768/180);
-  float data_y = ((rec[5]<<8)|rec[6])/(32768/180);
-  float data_z = ((rec[7]<<8)|rec[8])/(32768/180);
+  short data_x = ((rec[3]<<8)|rec[4])/(32768/180);
+  short data_y = ((rec[5]<<8)|rec[6])/(32768/180);
+  short data_z = ((rec[7]<<8)|rec[8])/(32768/180);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
 
 void printAngVel(short rec[]){
-  float data_x = ((rec[3]<<8)|rec[4])/(32768/2000);
-  float data_y = ((rec[5]<<8)|rec[6])/(32768/2000);
-  float data_z = ((rec[7]<<8)|rec[8])/(32768/2000);
+  short data_x = ((rec[3]<<8)|rec[4])/(32768/2000);
+  short data_y = ((rec[5]<<8)|rec[6])/(32768/2000);
+  short data_z = ((rec[7]<<8)|rec[8])/(32768/2000);
   Serial.print(data_x);Serial.print("   "); Serial.print(data_y);Serial.print("   "); Serial.println(data_z);
   }
   
@@ -525,7 +525,7 @@ void postHTTP(int sen){
   String requestBody;
   serializeJson(sensor, requestBody);
 
-  http.begin("http://sacheonchallenge.toysmythiot.com:5000/sensor"); 
+  http.begin("HTTP URI "); 
   http.addHeader("Content-Type", "application/json", "Content-Length", requestBody.length());
 
   int httpResponseCode = http.POST(requestBody);
@@ -574,8 +574,8 @@ void setup()
   Serial.println("--------------- Serial Initiated ---------------");
   calibrateAcc(1);
   calibrateAcc(2);
-  calibrateMag(1);
-  calibrateMag(2);
+//  calibrateMag(1);
+//  calibrateMag(2);
   Serial.println("--------------- Calibration Done ---------------");
   rs485.flush();
   
@@ -602,5 +602,5 @@ void loop()
   postHTTP(1);
   postHTTP(2);
   clearBuffer();
-  delay(500);
+  delay(10);
 }
