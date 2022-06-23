@@ -18,3 +18,5 @@ compatible with Wit-motion devices working with RS485
 sensing and posting two sensors with single ESP32 had time issues... about 3~4 packets a sec
 
 --> divided into two processors
+
+[test result 220622](https://checker-manatee-fb6.notion.site/WITMOTION-VIBRATION-4a13a00d9e3d44b08eb863e3cd551499)
