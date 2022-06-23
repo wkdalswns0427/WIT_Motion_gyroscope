@@ -553,7 +553,7 @@ void postHTTP(int sen){
   String requestBody;
   serializeJson(sensor, requestBody);
 
-  http.begin("http://sacheonchallenge.toysmythiot.com:5000/sensor"); 
+  http.begin("http://-----------------------------------"); 
   http.addHeader("Content-Type", "application/json", "Content-Length", requestBody.length());
 
   int httpResponseCode = http.POST(requestBody);
